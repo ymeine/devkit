@@ -49,15 +49,20 @@ export class VirtualDirEntry implements DirEntry {
     return this._path == '/' ? null : this._tree.getDir(dirname(this._path));
   }
   get path() { return this._path; }
+
+  private _getDirectChildren(paths: Path[]) {
+    return paths
+      .filter(path => dirname(path) === this._path)
+      .map(path => basename(path));
+  }
+
   get subdirs() {
-    return this._tree.files
-               .filter(path => path.startsWith(this._path) && dirname(path) != this._path)
-               .map(path => basename(path));
+    const directories = this._tree.files.map(path => dirname(path));
+
+    return Array.from(new Set(this._getDirectChildren(directories)));
   }
   get subfiles() {
-    return this._tree.files
-               .filter(path => path.startsWith(this._path) && dirname(path) == this._path)
-               .map(path => basename(path));
+    return this._getDirectChildren(this._tree.files);
   }
 
   dir(name: PathFragment) {

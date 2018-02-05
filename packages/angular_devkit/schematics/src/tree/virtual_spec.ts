@@ -25,16 +25,13 @@ function files(tree: Tree) {
 
 describe('VirtualDirEntry', () => {
   it('can visit', () => {
-    const files = {
-      '/sub1/file1': '/sub1/file1',
-      '/sub1/file2': '/sub1/file2',
-      '/sub1/file3': '/sub1/file3',
-      '/sub1/sub2/file4': '/sub1/sub2/file4',
-      '/sub1/sub2/file5': '/sub1/sub2/file5',
-      '/sub3/file6': '',
-    };
-    const host = new InMemoryFileSystemTreeHost(files);
-    const tree = new FileSystemTree(host);
+    const tree = new VirtualTree();
+    tree.create('/sub1/file1', '/sub1/file1');
+    tree.create('/sub1/file2', '/sub1/file2');
+    tree.create('/sub1/file3', '/sub1/file3');
+    tree.create('/sub1/sub2/file4', '/sub1/sub2/file4');
+    tree.create('/sub1/sub2/file5', '/sub1/sub2/file5');
+    tree.create('/sub3/file6', '');
 
     let allPaths: string[] = [];
     tree.getDir(normalize('/sub1'))
