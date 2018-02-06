@@ -35,7 +35,7 @@ export class InMemoryFileSystemTreeHost implements FileSystemTreeHost {
   isDirectory(path: string) {
     path = normalize(path);
 
-    return path == '/' || this._files.some(p => p.split('/').slice(0, -1).join('/') == path);
+    return path == '/' || this._files.some(p => p.startsWith(path) && p.length > path.length);
   }
   readFile(path: string) {
     path = normalize(path);

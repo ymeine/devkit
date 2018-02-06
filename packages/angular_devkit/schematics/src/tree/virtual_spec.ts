@@ -24,38 +24,105 @@ function files(tree: Tree) {
 
 
 describe('VirtualDirEntry', () => {
-  it('can visit', () => {
-    const tree = new VirtualTree();
-    tree.create('/sub1/file1', '/sub1/file1');
-    tree.create('/sub1/file2', '/sub1/file2');
-    tree.create('/sub1/file3', '/sub1/file3');
-    tree.create('/sub1/sub2/file4', '/sub1/sub2/file4');
-    tree.create('/sub1/sub2/file5', '/sub1/sub2/file5');
-    tree.create('/sub3/file6', '');
+  const sets: {
+    name: string,
+    files: string[],
+    visits: {
+      root: string,
+      expected?: string[],
+      focus?: boolean,
+    }[],
+    focus?: boolean,
+  }[] = [
+    {
+      name: 'empty',
+      files: [],
+      visits: [
+        {root: '/', expected: []},
+      ],
+    },
 
-    let allPaths: string[] = [];
-    tree.getDir(normalize('/sub1'))
-      .visit((p, entry) => {
-        expect(entry).not.toBeNull();
-        expect(entry !.content.toString()).toEqual(p);
-        allPaths.push(p);
+    {
+      name: 'file at root',
+      files: ['/file'],
+      visits: [
+        {root: '/'},
+        {root: '/file', expected: []},
+      ],
+    },
+    {
+      name: 'file under first level folder',
+      // duplicate use case: folder of single file at root
+      files: ['/folder/file'],
+      visits: [
+        {root: '/'},
+        {root: '/folder', expected: ['/folder/file']},
+        {root: '/folder/file', expected: []},
+        {root: '/wrong', expected: []},
+      ],
+    },
+    {
+      name: 'file under nested folder',
+      // duplicate use case: nested folder of files
+      files: ['/folder/nested_folder/file'],
+      visits: [
+        {root: '/'},
+        {root: '/folder', expected: ['/folder/nested_folder/file']},
+        {root: '/folder/nested_folder', expected: ['/folder/nested_folder/file']},
+        {root: '/folder/nested_folder/file', expected: []},
+      ],
+    },
+
+    {
+      name: 'nested folders',
+      // duplicate use case: folder of folders at root
+      // duplicate use case: folders of mixed
+      files: [
+        '/folder/nested_folder0/file',
+        '/folder/nested_folder1/folder/file',
+        '/folder/nested_folder2/file',
+        '/folder/nested_folder2/folder/file',
+      ],
+      visits: [
+        {root: '/'},
+        {root: '/folder'},
+        {root: '/folder/nested_folder0', expected: ['/folder/nested_folder0/file']},
+        {root: '/folder/nested_folder1', expected: ['/folder/nested_folder1/folder/file']},
+        {root: '/folder/nested_folder1/folder', expected: ['/folder/nested_folder1/folder/file']},
+        {root: '/folder/nested_folder2', expected: [
+          '/folder/nested_folder2/file',
+          '/folder/nested_folder2/folder/file',
+        ]},
+        {root: '/folder/nested_folder2/folder', expected: ['/folder/nested_folder2/folder/file']},
+      ],
+    },
+  ];
+
+  sets.forEach(({name, files: paths, visits, focus: focusSet}) => {
+    visits.forEach(({root, expected, focus}) => {
+      if (expected == null) { expected = paths; }
+
+      const tester = focusSet || focus ? fit : it;
+      tester(`can visit: ${name} from ${root}`, () => {
+        const tree = new VirtualTree();
+        const files: {[key: string]: string} = {};
+        const addFile = (path: string) => {
+          files[path] = path;
+          tree.create(path, path);
+        };
+        paths.forEach(addFile);
+
+        const allPaths: string[] = [];
+        tree.getDir(normalize(root))
+          .visit((p, entry) => {
+            expect(entry).not.toBeNull();
+            expect(entry !.content.toString()).toEqual(p);
+            allPaths.push(p);
+          });
+
+        expect(allPaths).toEqual(expected!);
       });
-
-    expect(allPaths).toEqual([
-      '/sub1/file1',
-      '/sub1/file2',
-      '/sub1/file3',
-      '/sub1/sub2/file4',
-      '/sub1/sub2/file5',
-    ]);
-
-    allPaths = [];
-    tree.getDir(normalize('/'))
-      .visit((p, _entry) => {
-        allPaths.push(p);
-      });
-
-    expect(allPaths).toEqual(Object.keys(files));
+    });
   });
 });
 

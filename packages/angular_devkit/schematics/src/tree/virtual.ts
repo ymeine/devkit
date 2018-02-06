@@ -50,19 +50,26 @@ export class VirtualDirEntry implements DirEntry {
   }
   get path() { return this._path; }
 
-  private _getDirectChildren(paths: Path[]) {
-    return paths
-      .filter(path => dirname(path) === this._path)
-      .map(path => basename(path));
-  }
-
   get subdirs() {
-    const directories = this._tree.files.map(path => dirname(path));
+    const directChildPartsCount = split(normalize(this._path)).length + 1;
 
-    return Array.from(new Set(this._getDirectChildren(directories)));
+    const directories = this._tree.files
+    // make sure entries belong to proper subbranch
+    .filter(path => path.startsWith(this._path))
+    // get all existing directories & prune to direct children
+    .map(path => split(normalize(path)).slice(0, -1).slice(0, directChildPartsCount))
+    // exclude current directory
+    .filter(parts => parts.length === directChildPartsCount)
+    // get directory name only
+    .map(parts => parts[parts.length - 1]);
+
+    // make sure to have a unique set (directories contain multiple files so appear multiple times)
+    return Array.from(new Set(directories));
   }
   get subfiles() {
-    return this._getDirectChildren(this._tree.files);
+    return this._tree.files
+      .filter(path => dirname(path) === this._path)
+      .map(path => basename(path));
   }
 
   dir(name: PathFragment) {
