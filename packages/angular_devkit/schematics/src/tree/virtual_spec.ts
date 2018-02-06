@@ -8,6 +8,7 @@
 // tslint:disable:non-null-operator
 import { normalize } from '@angular-devkit/core';
 import { FileAlreadyExistException, FileDoesNotExistException } from '../exception/exception';
+import { testTreeVisit } from './common_spec';
 import { FileSystemTree } from './filesystem';
 import { FileEntry, MergeStrategy, Tree } from './interface';
 import { InMemoryFileSystemTreeHost } from './memory-host';
@@ -24,105 +25,77 @@ function files(tree: Tree) {
 
 
 describe('VirtualDirEntry', () => {
-  const sets: {
-    name: string,
-    files: string[],
-    visits: {
-      root: string,
-      expected?: string[],
-      focus?: boolean,
-    }[],
-    focus?: boolean,
-  }[] = [
-    {
-      name: 'empty',
-      files: [],
-      visits: [
-        {root: '/', expected: []},
-      ],
-    },
+  testTreeVisit({
+    createTree: paths => {
+      const tree = new VirtualTree();
+      paths.forEach(path => tree.create(path, path));
 
-    {
-      name: 'file at root',
-      files: ['/file'],
-      visits: [
-        {root: '/'},
-        {root: '/file', expected: []},
-      ],
+      return tree;
     },
-    {
-      name: 'file under first level folder',
-      // duplicate use case: folder of single file at root
-      files: ['/folder/file'],
-      visits: [
-        {root: '/'},
-        {root: '/folder', expected: ['/folder/file']},
-        {root: '/folder/file', expected: []},
-        {root: '/wrong', expected: []},
-      ],
-    },
-    {
-      name: 'file under nested folder',
-      // duplicate use case: nested folder of files
-      files: ['/folder/nested_folder/file'],
-      visits: [
-        {root: '/'},
-        {root: '/folder', expected: ['/folder/nested_folder/file']},
-        {root: '/folder/nested_folder', expected: ['/folder/nested_folder/file']},
-        {root: '/folder/nested_folder/file', expected: []},
-      ],
-    },
+    sets: [
+      {
+        name: 'empty',
+        files: [],
+        visits: [
+          {root: '/', expected: []},
+        ],
+      },
 
-    {
-      name: 'nested folders',
-      // duplicate use case: folder of folders at root
-      // duplicate use case: folders of mixed
-      files: [
-        '/folder/nested_folder0/file',
-        '/folder/nested_folder1/folder/file',
-        '/folder/nested_folder2/file',
-        '/folder/nested_folder2/folder/file',
-      ],
-      visits: [
-        {root: '/'},
-        {root: '/folder'},
-        {root: '/folder/nested_folder0', expected: ['/folder/nested_folder0/file']},
-        {root: '/folder/nested_folder1', expected: ['/folder/nested_folder1/folder/file']},
-        {root: '/folder/nested_folder1/folder', expected: ['/folder/nested_folder1/folder/file']},
-        {root: '/folder/nested_folder2', expected: [
+      {
+        name: 'file at root',
+        files: ['/file'],
+        visits: [
+          {root: '/'},
+          {root: '/file', expected: []},
+        ],
+      },
+      {
+        name: 'file under first level folder',
+        // duplicate use case: folder of single file at root
+        files: ['/folder/file'],
+        visits: [
+          {root: '/'},
+          {root: '/folder', expected: ['/folder/file']},
+          {root: '/folder/file', expected: []},
+          {root: '/wrong', expected: []},
+        ],
+      },
+      {
+        name: 'file under nested folder',
+        // duplicate use case: nested folder of files
+        files: ['/folder/nested_folder/file'],
+        visits: [
+          {root: '/'},
+          {root: '/folder', expected: ['/folder/nested_folder/file']},
+          {root: '/folder/nested_folder', expected: ['/folder/nested_folder/file']},
+          {root: '/folder/nested_folder/file', expected: []},
+        ],
+      },
+
+      {
+        name: 'nested folders',
+        // duplicate use case: folder of folders at root
+        // duplicate use case: folders of mixed
+        files: [
+          '/folder/nested_folder0/file',
+          '/folder/nested_folder1/folder/file',
           '/folder/nested_folder2/file',
           '/folder/nested_folder2/folder/file',
-        ]},
-        {root: '/folder/nested_folder2/folder', expected: ['/folder/nested_folder2/folder/file']},
-      ],
-    },
-  ];
-
-  sets.forEach(({name, files: paths, visits, focus: focusSet}) => {
-    visits.forEach(({root, expected, focus}) => {
-      if (expected == null) { expected = paths; }
-
-      const tester = focusSet || focus ? fit : it;
-      tester(`can visit: ${name} from ${root}`, () => {
-        const tree = new VirtualTree();
-        const files: {[key: string]: string} = {};
-        const addFile = (path: string) => {
-          files[path] = path;
-          tree.create(path, path);
-        };
-        paths.forEach(addFile);
-
-        const allPaths: string[] = [];
-        tree.getDir(normalize(root))
-          .visit((p, entry) => {
-            expect(entry).not.toBeNull();
-            expect(entry !.content.toString()).toEqual(p);
-            allPaths.push(p);
-          });
-
-        expect(allPaths).toEqual(expected!);
-      });
-    });
+        ],
+        visits: [
+          {root: '/'},
+          {root: '/folder'},
+          {root: '/folder/nested_folder0', expected: ['/folder/nested_folder0/file']},
+          {root: '/folder/nested_folder1', expected: ['/folder/nested_folder1/folder/file']},
+          {root: '/folder/nested_folder1/folder', expected: ['/folder/nested_folder1/folder/file']},
+          {root: '/folder/nested_folder2', expected: [
+            '/folder/nested_folder2/file',
+            '/folder/nested_folder2/folder/file',
+          ]},
+          {root: '/folder/nested_folder2/folder', expected: ['/folder/nested_folder2/folder/file']},
+        ],
+      },
+    ],
   });
 });
 
