@@ -75,11 +75,23 @@ function _getGlobalNodeModules() {
     : path.resolve(globalPrefix || '', 'node_modules');
 }
 
-function _getNpmPrefix(): string | null {
-  const {stdout, error} = childProcess.spawnSync('npm config get prefix', {shell: true});
-  if (error != null) { return null; }
+let npmPrefix: string | null | undefined = undefined;
 
-  return stdout.toString().trim();
+function _getNpmPrefix(): string | null {
+  if (npmPrefix !== undefined) {
+    return npmPrefix;
+  }
+
+  try {
+    const {stdout, error} = childProcess.spawnSync('npm config get prefix', {shell: true});
+    if (error != null) { return null; }
+
+    npmPrefix = stdout.toString().trim();
+  } catch (exception) {
+    npmPrefix = null;
+  }
+
+  return npmPrefix;
 }
 
 
