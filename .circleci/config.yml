@@ -38,6 +38,10 @@ jobs:
       - restore_cache:
           key: angular_devkit-{{ checksum "package-lock.json" }}
 
+      - run: which node
+      - run: 'node -pe "process.execPath"'
+      - run: which npm
+      - run: npm config get prefix
       - run: npm install --no-save
       - run: npm run test -- --code-coverage --full
 
